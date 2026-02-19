@@ -2,60 +2,109 @@ package bank;
 
 import bank.data.RegistrationDto;
 import bank.data.UserGenerator;
-import org.junit.jupiter.api.BeforeAll;
+import com.codeborne.selenide.Condition;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.open;
 import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.*;
 
 class AuthApiTest {
 
-    @BeforeAll
-    static void setUpAll() {
+    @BeforeEach
+    void setup() {
+        open("http://localhost:9999");
     }
 
     @Test
-    void shouldCreateActiveUser() {
-        RegistrationDto user = UserGenerator.generateActiveUser("ru");
+    @DisplayName("Should successfully login with active registered user")
+    void shouldSuccessfulLoginIfRegisteredActiveUser() {
+        var registeredUser = UserGenerator.generateUserWithStatus("ru", "active");
+        ApiClient.createUser(registeredUser);
 
-        given()
-                .baseUri("http://localhost")
-                .port(9999)
-                .contentType("application/json")
-                .body(user)
-                .when()
-                .post("/api/system/users")
-                .then()
-                .statusCode(200);
+        $("[data-test-id='login'] input").setValue(registeredUser.getLogin());
+        $("[data-test-id='password'] input").setValue(registeredUser.getPassword());
+        $("[data-test-id='action-login']").click();
+
+        $("h2.heading")
+                .shouldBe(Condition.visible, Duration.ofSeconds(10))
+                .shouldHave(Condition.text("Личный кабинет"));
     }
 
     @Test
-    void shouldCreateBlockedUser() {
-        RegistrationDto user = UserGenerator.generateBlockedUser("ru");
+    @DisplayName("Should get error message if login with not registered user")
+    void shouldGetErrorIfNotRegisteredUser() {
+        var notRegisteredUser = UserGenerator.generateUserWithStatus("ru", "active");
 
-        given()
-                .baseUri("http://localhost")
-                .port(9999)
-                .contentType("application/json")
-                .body(user)
-                .when()
-                .post("/api/system/users")
-                .then()
-                .statusCode(200);
+        $("[data-test-id='login'] input").setValue(notRegisteredUser.getLogin());
+        $("[data-test-id='password'] input").setValue(notRegisteredUser.getPassword());
+        $("[data-test-id='action-login']").click();
+
+        $("[data-test-id='error-notification']")
+                .shouldBe(Condition.visible, Duration.ofSeconds(10));
+
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка!"));
     }
 
     @Test
-    void shouldOverwriteExistingUser() {
-        // Создаём пользователя 2 раза
-        RegistrationDto user1 = UserGenerator.generateActiveUser("ru");
-        ApiClient.createUser(user1);
+    @DisplayName("Should get error message if login with blocked registered user")
+    void shouldGetErrorIfBlockedUser() {
+        var blockedUser = UserGenerator.generateUserWithStatus("ru", "blocked");
+        ApiClient.createUser(blockedUser);
 
-        RegistrationDto user2 = new RegistrationDto(
-                user1.getLogin(),
-                "newpassword",
-                "blocked"
-        );
-        ApiClient.createUser(user2);
+        $("[data-test-id='login'] input").setValue(blockedUser.getLogin());
+        $("[data-test-id='password'] input").setValue(blockedUser.getPassword());
+        $("[data-test-id='action-login']").click();
+
+        $("[data-test-id='error-notification']")
+                .shouldBe(Condition.visible, Duration.ofSeconds(10));
+
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка! Пользователь заблокирован"));
+    }
+
+    @Test
+    @DisplayName("Should get error message if login with wrong login")
+    void shouldGetErrorIfWrongLogin() {
+        var registeredUser = UserGenerator.generateUserWithStatus("ru", "active");
+        ApiClient.createUser(registeredUser);
+
+        // Фиксированный неправильный логин
+        var wrongLogin = "логин123";
+
+        $("[data-test-id='login'] input").setValue(wrongLogin);
+        $("[data-test-id='password'] input").setValue(registeredUser.getPassword());
+        $("[data-test-id='action-login']").click();
+
+        $("[data-test-id='error-notification']")
+                .shouldBe(Condition.visible, Duration.ofSeconds(10));
+
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка!"));
+    }
+
+    @Test
+    @DisplayName("Should get error message if login with wrong password")
+    void shouldGetErrorIfWrongPassword() {
+        var registeredUser = UserGenerator.generateUserWithStatus("ru", "active");
+        ApiClient.createUser(registeredUser);
+
+        // Фиксированный неправильный пароль
+        var wrongPassword = "пароль123";
+
+        $("[data-test-id='login'] input").setValue(registeredUser.getLogin());
+        $("[data-test-id='password'] input").setValue(wrongPassword);
+        $("[data-test-id='action-login']").click();
+
+        $("[data-test-id='error-notification']")
+                .shouldBe(Condition.visible, Duration.ofSeconds(10));
+
+        $("[data-test-id='error-notification'] .notification__content")
+                .shouldHave(Condition.text("Ошибка!"));
     }
 }

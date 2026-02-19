@@ -27,14 +27,4 @@ public class ApiClient {
                 .then()
                 .statusCode(200);
     }
-
-    public static void createUser(RegistrationDto user, int expectedStatusCode) {
-        given()
-                .spec(requestSpec)
-                .body(user)
-                .when()
-                .post("/api/system/users")
-                .then()
-                .statusCode(expectedStatusCode);
-    }
 }
