@@ -48,7 +48,7 @@ class AuthApiTest {
                 .shouldBe(Condition.visible, Duration.ofSeconds(10));
 
         $("[data-test-id='error-notification'] .notification__content")
-                .shouldHave(Condition.text("Ошибка!"));
+                .shouldHave(Condition.text("Неверно указан логин или пароль"));
     }
 
     @Test
@@ -74,10 +74,10 @@ class AuthApiTest {
         var registeredUser = UserGenerator.generateUserWithStatus("ru", "active");
         ApiClient.createUser(registeredUser);
 
-        // Фиксированный неправильный логин
-        var wrongLogin = "логин123";
+        // Профиль для создания неправильного логина
+        var registeredWrong = UserGenerator.generateUserWithStatus("ru", "active");
 
-        $("[data-test-id='login'] input").setValue(wrongLogin);
+        $("[data-test-id='login'] input").setValue(registeredWrong.getLogin());
         $("[data-test-id='password'] input").setValue(registeredUser.getPassword());
         $("[data-test-id='action-login']").click();
 
@@ -85,7 +85,7 @@ class AuthApiTest {
                 .shouldBe(Condition.visible, Duration.ofSeconds(10));
 
         $("[data-test-id='error-notification'] .notification__content")
-                .shouldHave(Condition.text("Ошибка!"));
+                .shouldHave(Condition.text("Неверно указан логин или пароль"));
     }
 
     @Test
@@ -94,17 +94,17 @@ class AuthApiTest {
         var registeredUser = UserGenerator.generateUserWithStatus("ru", "active");
         ApiClient.createUser(registeredUser);
 
-        // Фиксированный неправильный пароль
-        var wrongPassword = "пароль123";
+        // Профиль для создания неправильного пароля
+        var registeredWrong = UserGenerator.generateUserWithStatus("ru", "active");
 
         $("[data-test-id='login'] input").setValue(registeredUser.getLogin());
-        $("[data-test-id='password'] input").setValue(wrongPassword);
+        $("[data-test-id='password'] input").setValue(registeredWrong.getPassword());
         $("[data-test-id='action-login']").click();
 
         $("[data-test-id='error-notification']")
                 .shouldBe(Condition.visible, Duration.ofSeconds(10));
 
         $("[data-test-id='error-notification'] .notification__content")
-                .shouldHave(Condition.text("Ошибка!"));
+                .shouldHave(Condition.text("Неверно указан логин или пароль"));
     }
 }
